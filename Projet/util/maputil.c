@@ -1,20 +1,26 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <getopt.h>
 
-
+void usage(int i){
+  fprintf(stderr,"maputil <file> --option \n\n --option:--getwitdh\n          --getheight\n          --getobjects\n          --getinfo\n");
+}
 
 void change_size(int newHeight, int newWidth, char *file){
-  int saveMap = open(file, O_RDWR);
-  
+  int saveMap = open(file, O_RDWR); 
   int width;
   int height;
   int nbObj;
   read(saveMap, &width, sizeof(unsigned));
   read(saveMap, &height, sizeof(unsigned));
   read(saveMap, &nbObj, sizeof(unsigned));
+
+  if (newHeight == 0) newHeight = height;
+  if (newWidth == 0) newWidth = width;
   
   // On récupere la matrice avant changement de taille
   int matrice[height][width];
@@ -44,66 +50,95 @@ void change_size(int newHeight, int newWidth, char *file){
       if(y <= (newHeight - height) || x >= width){
 	write(saveMap, &noObject, sizeof(int));
       }else{
-	write(saveMap, &matrice[y-(newHeight-height)][x]);
+	write(saveMap, &matrice[y-(newHeight-height)][x], sizeof(int));
       }
     }
   }
 
   // On réécrit le reste du fichier
   write(saveMap, buffer, fin - debut);
+
+  close(saveMap);
 }
-						
 
 
 int main (int argc, char **argv){
-
-  //Usage
-  if(argc != 3){
-    fprintf(stderr,"maputil <file> --option \n\n --option:--getwitdh\n          --getheight\n          --getobjects\n          --getinfo\n");
-    exit(EXIT_FAILURE);
-  }
-
-  //Ouverture
+  //Usages
+  if (argc < 3) usage(0);
   int fd = open(argv[1], O_RDONLY);
-  if (fd == -1){
-    fprintf(stderr,"erreur lors de l'ouverture du fichier \n");
-  }
+  if (fd == -1) usage(1);
+  
+
+  
+  static struct option long_options[] = {                                                 ////
+    {"getwidth", no_argument, 0,'w'},
+    {"getheight", no_argument, 0, 'h'},
+    {"getobjects", no_argument, 0, 'o'},
+    {"getinfo", no_argument, 0, 'a'},
+    {"setwidth",required_argument,0,'W'},
+    {"setheight", required_argument, 0,'H'}
+  };
+  int newHeight = 0;
+  int newWidth = 0;
   unsigned int buffer;
-  char *arg = argv[2];
-  
-  if (strcmp(arg,"--getwitdh") == 0){
-    lseek(fd, 0 ,SEEK_SET);
-    read(fd, &buffer, sizeof(unsigned int));
-    printf("witdth: %d\n",buffer);
+  int opt;
+  int long_index=0;
+  while( (opt = getopt_long(argc, argv,"whoaW:H:", long_options, &long_index)) != -1){       ///
+    switch(opt){
+    case 'w':
+      lseek(fd, 0 ,SEEK_SET);
+      read(fd, &buffer, sizeof(unsigned int));
+      printf("witdth: %d\n",buffer);
+      break;
+      
+    case 'h':
+      lseek(fd, sizeof(unsigned int) ,SEEK_SET);
+      read(fd, &buffer, sizeof(unsigned int));
+      printf("height: %d\n",buffer);
+      break;
+      
+    case 'o':
+      lseek(fd, 2*sizeof(unsigned int) ,SEEK_SET);
+      read(fd, &buffer, sizeof(unsigned int));
+      printf("objects number: %d\n",buffer);
+      break;
+      
+    case 'a':
+      //width
+      lseek(fd, 0 ,SEEK_SET);
+      read(fd, &buffer, sizeof(unsigned int));
+      printf("witdth: %d\n",buffer);
+      //height
+      read(fd, &buffer, sizeof(unsigned int));
+      printf("height: %d\n",buffer);
+      //objects number
+      read(fd, &buffer, sizeof(unsigned int));
+      printf("objects number: %d\n",buffer);
+      break;
+      
+    case 'H':
+      printf("%c et %s \n",opt, optarg);
+      newHeight = atoi(optarg);
+      break;
+      
+    case 'W':
+      printf("%c et %s \n",opt, optarg);
+      newWidth = atoi(optarg);
+      printf("%d \n",newWidth);
+      break;
+      
+    default:
+      usage(1);
+      exit(EXIT_FAILURE);
+    }
   }
   
-  else if (strcmp(arg,"--getheight") == 0){
-    lseek(fd, sizeof(unsigned int) ,SEEK_SET);
-    read(fd, &buffer, sizeof(unsigned int));
-    printf("height: %d\n",buffer);
-  }
-  
-  else if (strcmp(arg,"--getobjects") == 0){
-    lseek(fd, 2*sizeof(unsigned int) ,SEEK_SET);
-    read(fd, &buffer, sizeof(unsigned int));
-    printf("objects number: %d\n",buffer);
-  }
-  
-  else if (strcmp(arg,"--getinfo") == 0){
-    //width
-    lseek(fd, 0 ,SEEK_SET);
-    read(fd, &buffer, sizeof(unsigned int));
-    printf("witdth: %d\n",buffer);
-    //height
-    read(fd, &buffer, sizeof(unsigned int));
-    printf("height: %d\n",buffer);
-    //objects number
-    read(fd, &buffer, sizeof(unsigned int));
-    printf("objects number: %d\n",buffer);
-  }
-  else{
-    puts("Option -- invalide !\n");
-  }
+  // TRAITEMENT
+  change_size(newHeight, newWidth, argv[1]);
   close(fd);
   return 1;
+
+    
+
+
 }

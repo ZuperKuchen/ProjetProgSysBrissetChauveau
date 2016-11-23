@@ -24,9 +24,13 @@ void change_size(int newHeight, int newWidth, char *file){
   
   // On récupere la matrice avant changement de taille
   int matrice[height][width];
+  int tmp;
+
+  //Attention mesdames et messieurs, l'erreur va commencer ! 
   for(int y = 0; y < height; y++){
     for(int x = 0; x < width; x++){
-      read(saveMap, &matrice[y][x], sizeof(int));
+      read(saveMap, &tmp, sizeof(int));
+      matrice[x][y] = tmp;
     }
   }
 
@@ -50,7 +54,8 @@ void change_size(int newHeight, int newWidth, char *file){
       if(y <= (newHeight - height) || x >= width){
 	write(saveMap, &noObject, sizeof(int));
       }else{
-	write(saveMap, &matrice[y-(newHeight-height)][x], sizeof(int));
+	tmp = matrice[y-(newHeight-height)][x];
+	write(saveMap, &tmp, sizeof(int));
       }
     }
   }
@@ -65,7 +70,8 @@ void change_size(int newHeight, int newWidth, char *file){
 int main (int argc, char **argv){
   //Usages
   if (argc < 3) usage(0);
-  int fd = open(argv[1], O_RDONLY);
+  char* file = argv[1];
+  int fd = open(file, O_RDONLY);
   if (fd == -1) usage(1);
   
 
@@ -131,10 +137,10 @@ int main (int argc, char **argv){
       usage(1);
       exit(EXIT_FAILURE);
     }
-  }
+  }  
   
   // TRAITEMENT
-  change_size(newHeight, newWidth, argv[1]);
+  change_size(newHeight, newWidth, file);
   close(fd);
   return 1;
 

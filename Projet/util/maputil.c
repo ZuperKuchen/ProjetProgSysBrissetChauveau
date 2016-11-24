@@ -30,7 +30,7 @@ void change_size(int newHeight, int newWidth, char *file){
   for(int y = 0; y < height; y++){
     for(int x = 0; x < width; x++){
       read(saveMap, &tmp, sizeof(int));
-      matrice[x][y] = tmp;
+      matrice[y][x] = tmp;
     }
   }
 
@@ -51,7 +51,7 @@ void change_size(int newHeight, int newWidth, char *file){
   
   for(int y = 0; y < newHeight; y++){
     for(int x = 0; x < newWidth; x++){
-      if(y <= (newHeight - height) || x >= width){
+      if(y < (newHeight - height) || x >= width){
 	write(saveMap, &noObject, sizeof(int));
       }else{
 	tmp = matrice[y-(newHeight-height)][x];

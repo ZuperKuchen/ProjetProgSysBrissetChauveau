@@ -118,7 +118,9 @@ int main (int argc, char **argv){
     {"getobjects", no_argument, 0, 'o'},
     {"getinfo", no_argument, 0, 'a'},
     {"setwidth",required_argument,0,'W'},
-    {"setheight", required_argument, 0,'H'}
+    {"setheight", required_argument, 0,'H'},
+    {"setobjects", required_argument, 0, 'O'},
+    {"pruneobjects",, no_argument, 0, 'p'}
   };
   int newHeight = 0;
   int newWidth = 0;
@@ -168,7 +170,12 @@ int main (int argc, char **argv){
       newWidth = atoi(optarg);
       printf("%d \n",newWidth);
       break;
-      
+    case 'O':
+      printf("%c et %s \n", opt,optarg);
+      break;
+    case 'p':
+      printf("%c \n",opt);
+      break;
     default:
       usage(1);
       exit(EXIT_FAILURE);

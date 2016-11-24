@@ -5,10 +5,42 @@
 #include <fcntl.h>
 #include <string.h>
 #include <getopt.h>
+#include <sys/types.h>
 
 void usage(int i){
   fprintf(stderr,"maputil <file> --option \n\n --option:--getwitdh\n          --getheight\n          --getobjects\n          --getinfo\n");
 }
+
+
+void file_trunc(char* filePath){
+  int width;
+  int height;
+  int nbObj;
+
+  int fd = open(filePath, O_RDWR);
+
+  read(fd, &width, sizeof(unsigned));
+  read(fd, &height, sizeof(unsigned));
+  read(fd, &nbObj, sizeof(unsigned));
+
+  lseek(fd, sizeof(int)*width*height, SEEK_CUR);
+
+  int size;
+  int tmpStr;
+  
+  for(int i = 0; i < nbObj; i++){
+    lseek(fd, sizeof(unsigned) + sizeof(int)*4, SEEK_CUR);
+    read(fd, &tmpStr, sizeof(int));
+    size = lseek(fd, sizeof(char)*tmpStr, SEEK_CUR);
+  }
+
+  int realSize = lseek(fd, 0, SEEK_END);
+
+  if(size < realSize){
+    ftruncate(fd, size);
+  }
+}
+
 
 void change_size(int newHeight, int newWidth, char *file){
   int saveMap = open(file, O_RDWR); 
@@ -64,7 +96,11 @@ void change_size(int newHeight, int newWidth, char *file){
   write(saveMap, buffer, fin - debut);
 
   close(saveMap);
+
+  file_trunc(file);
 }
+
+
 
 
 int main (int argc, char **argv){

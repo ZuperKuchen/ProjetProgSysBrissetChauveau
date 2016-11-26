@@ -120,7 +120,7 @@ int main (int argc, char **argv){
     {"setwidth",required_argument,0,'W'},
     {"setheight", required_argument, 0,'H'},
     {"setobjects", required_argument, 0, 'O'},
-    {"pruneobjects",, no_argument, 0, 'p'}
+    {"pruneobjects", no_argument, 0, 'p'}
   };
   int newHeight = 0;
   int newWidth = 0;

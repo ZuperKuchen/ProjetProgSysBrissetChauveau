@@ -6,6 +6,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <sys/types.h>
+#include <stdbool.h>
 
 void usage(int i){
   fprintf(stderr,"maputil <file> --option \n\n --option:--getwitdh\n          --getheight\n          --getobjects\n          --getinfo\n");
@@ -58,7 +59,6 @@ void change_size(int newHeight, int newWidth, char *file){
   int matrice[height][width];
   int tmp;
 
-  //Attention mesdames et messieurs, l'erreur va commencer ! 
   for(int y = 0; y < height; y++){
     for(int x = 0; x < width; x++){
       read(saveMap, &tmp, sizeof(int));
@@ -72,7 +72,7 @@ void change_size(int newHeight, int newWidth, char *file){
   char *buffer = malloc(fin - debut);
   read(saveMap, buffer, fin - debut);
 
-  // On change les info de taille
+  // On change les infos de taille
   lseek(saveMap, 0, SEEK_SET);
   write(saveMap, &newWidth, sizeof(unsigned));
   write(saveMap, &newHeight, sizeof(unsigned));
@@ -101,6 +101,11 @@ void change_size(int newHeight, int newWidth, char *file){
 }
 
 
+/*                    
+ *
+ *            MAIN
+ *
+ */
 
 
 int main (int argc, char **argv){
@@ -111,8 +116,8 @@ int main (int argc, char **argv){
   if (fd == -1) usage(1);
   
 
-  
-  static struct option long_options[] = {                                                 ////
+  //Initialisation variables getopt
+  static struct option long_options[] = {                                                
     {"getwidth", no_argument, 0,'w'},
     {"getheight", no_argument, 0, 'h'},
     {"getobjects", no_argument, 0, 'o'},
@@ -122,14 +127,21 @@ int main (int argc, char **argv){
     {"setobjects", required_argument, 0, 'O'},
     {"pruneobjects", no_argument, 0, 'p'}
   };
-  int newHeight = 0;
-  int newWidth = 0;
-  unsigned int buffer;
+  char *optstring = "whoaW:H:O:P";
   int opt;
   int long_index=0;
-  while( (opt = getopt_long(argc, argv,"whoaW:H:", long_options, &long_index)) != -1){       ///
+
+  
+  //Initialisation variables de test
+  int newHeight = 0;
+  int newWidth = 0;
+  bool setobj = false;
+  
+  unsigned int buffer;
+  
+  while( (opt = getopt_long(argc, argv, optstring, long_options, &long_index)) != -1){
     switch(opt){
-    case 'w':
+    case 'w':  
       lseek(fd, 0 ,SEEK_SET);
       read(fd, &buffer, sizeof(unsigned int));
       printf("witdth: %d\n",buffer);
@@ -161,20 +173,31 @@ int main (int argc, char **argv){
       break;
       
     case 'H':
-      printf("%c et %s \n",opt, optarg);
-      newHeight = atoi(optarg);
+      printf("Height set to  %s \n", optarg);
       break;
       
     case 'W':
-      printf("%c et %s \n",opt, optarg);
+      printf("Width set to %s \n", optarg);
       newWidth = atoi(optarg);
-      printf("%d \n",newWidth);
       break;
     case 'O':
-      printf("%c et %s \n", opt,optarg);
+      printf("--setobjects %c et ses arguments %s \n", opt, optarg);
+      
+      /*FILE* args_file = fopen(optarg, "r");
+      if (args_file != NULL){
+	puts("Ca AVance \n");
+      }
+      char buf[1000];                                                               //tests
+      fgets(buf,1000, args_file) != NULL;
+      printf("%s",buf);
+      printf("\n %d \n ",(int) strlen(buf));
+      printf("--setobjects %c et ses arguments %s \n", opt, optarg+6);*/
+
+      
+      setobj = true;
       break;
     case 'p':
-      printf("%c \n",opt);
+      printf("--pruneobjects : %c \n", opt);
       break;
     default:
       usage(1);
@@ -183,7 +206,15 @@ int main (int argc, char **argv){
   }  
   
   // TRAITEMENT
-  change_size(newHeight, newWidth, file);
+  if( newHeight != 0 || newWidth != 0){
+    change_size(newHeight, newWidth, file);
+  }
+  if ( setobj ){
+    printf("setobjects is what you need \n");
+  }
+
+
+  
   close(fd);
   return 1;
 

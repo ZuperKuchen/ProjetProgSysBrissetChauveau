@@ -8,6 +8,16 @@
 #include <sys/types.h>
 #include <stdbool.h>
 
+typedef struct Object{
+  unsigned int frames;
+  int solid;
+  int destructible;
+  int collectible;
+  int generator;
+  int sizePath;
+  char* pathName;
+    }Object;
+
 void usage(int i){
   fprintf(stderr,"maputil <file> --option \n\n --option:--getwitdh\n          --getheight\n          --getobjects\n          --getinfo\n");
 }
@@ -183,20 +193,61 @@ int main (int argc, char **argv){
     case 'O':
       printf("--setobjects %c et ses arguments %s \n", opt, optarg);
 
-      /*//
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      ///
       
       FILE* args_file = fopen(optarg, "r");
       if (args_file != NULL){
 	puts("Ca AVance \n");
       }
-      char buf[1000];                                                               //tests
-      fgets(buf,1000, args_file) != NULL;
-      printf("%s",buf);
-      printf("\n %d \n ",(int) strlen(buf));
+      printf(" %s \n",argv[3]);
+      printf(" %s \n",argv[long_index-2]);
+      printf(" %s \n",argv[long_index-1]);
+      printf(" %s \n",argv[long_index]);
+      printf(" %s \n",argv[long_index+1]);
+
+      printf("  %d \n",argc);
+   
       printf("--setobjects %c et ses arguments %s \n", opt, optarg+6);
 
-      //*/
+      ///
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+
+
+      
       setobj = true;
       break;
     case 'p':

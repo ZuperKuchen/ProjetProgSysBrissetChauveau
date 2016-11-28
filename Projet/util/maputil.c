@@ -9,13 +9,13 @@
 #include <stdbool.h>
 
 typedef struct Object{
-  unsigned int frames;
+  unsigned frames;
   int solid;
   int destructible;
   int collectible;
   int generator;
-  int sizePath;
-  char* pathName;
+  int sizeName;
+  char* name;
     }Object;
 
 void usage(int i){
@@ -144,7 +144,7 @@ int main (int argc, char **argv){
   //Initialisation variables de test
   int newHeight = 0;
   int newWidth = 0;
-  bool setobj = false;
+  unsigned setobj = 0;
   
   unsigned int buffer;
   
@@ -171,13 +171,13 @@ int main (int argc, char **argv){
     case 'a':
       //width
       lseek(fd, 0 ,SEEK_SET);
-      read(fd, &buffer, sizeof(unsigned int));
+      read(fd, &buffer, sizeof(unsigned));
       printf("witdth: %d\n",buffer);
       //height
-      read(fd, &buffer, sizeof(unsigned int));
+      read(fd, &buffer, sizeof(unsigned));
       printf("height: %d\n",buffer);
       //objects number
-      read(fd, &buffer, sizeof(unsigned int));
+      read(fd, &buffer, sizeof(unsigned));
       printf("objects number: %d\n",buffer);
       break;
       
@@ -191,64 +191,14 @@ int main (int argc, char **argv){
       newWidth = atoi(optarg);
       break;
     case 'O':
-      printf("--setobjects %c et ses arguments %s \n", opt, optarg);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      
-      ///
-      
-      FILE* args_file = fopen(optarg, "r");
-      if (args_file != NULL){
-	puts("Ca AVance \n");
+      lseek(fd, 2*sizeof(unsigned) ,SEEK_SET);
+      read(fd, &buffer, sizeof(unsigned));
+      unsigned newNbObj = (argc - 3) / 6;
+      if (newNbObj < buffer){
+	puts("Less objects than expected \n");
+	exit(EXIT_FAILURE);
       }
-      printf(" %s \n",argv[3]);
-      printf(" %s \n",argv[long_index-2]);
-      printf(" %s \n",argv[long_index-1]);
-      printf(" %s \n",argv[long_index]);
-      printf(" %s \n",argv[long_index+1]);
-
-      printf("  %d \n",argc);
-   
-      printf("--setobjects %c et ses arguments %s \n", opt, optarg+6);
-
-      ///
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      
-
-
-      
-      setobj = true;
+      setobj = newNbObj;
       break;
     case 'p':
       printf("--pruneobjects : %c \n", opt);
@@ -263,11 +213,53 @@ int main (int argc, char **argv){
   if( newHeight != 0 || newWidth != 0){
     change_size(newHeight, newWidth, file);
   }
-  if ( setobj ){
+  if (setobj !=0){
     printf("setobjects is what you need \n");
+
+    // On Passe les arguments dans un tableau
+    Object* Objets[setobj];
+    unsigned tmpFra;
+    int tmpSol;
+    int tmpDestruct;
+    int tmpCol;
+    int tmpGen;
+    int tmpSize ;
+    char* tmpName;
+    for(int i = 3, j = 0; i < argc; i += 6, j++){
+      tmpSize = strlen(argv[i]);
+      tmpName = argv[i];
+      if (strcmp("destructible", argv[i+3]) == 0){
+	tmpDestruct = 1;
+      }
+      else tmpDestruct = 0;
+      if (strcmp("collectible", argv[i+4]) == 0){
+	tmpCol = 1;
+      }
+      else tmpCol = 0;
+      if (strcmp("generator",argv[i+5]) == 0){
+	tmpGen = 1;
+      }
+      else tmpGen = 0;
+      tmpFra = atoi(argv[i+1]);
+      if (strcmp("air",argv[i+2]) == 0){
+	tmpSol = 0;
+      }
+      else if (strcmp("semi-solid",argv[i+2]) == 0){
+	tmpSol = 1;
+      }
+      else tmpSol = 2;
+      Objets[j] = malloc(sizeof(Object));
+      Objets[j]->frames = tmpFra;
+      Objets[j]->solid = tmpSol;
+      Objets[j]->destructible = tmpDestruct;
+      Objets[j]->collectible = tmpCol;
+      Objets[j]->generator = tmpGen;
+      Objets[j]->sizeName = tmpSize;
+      Objets[j]->name = tmpName;
+    }
+    //On effectue les changements
+    change_objects(Objets, setobj, argv[1]);
   }
-
-
   
   close(fd);
   return 1;

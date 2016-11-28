@@ -52,6 +52,16 @@ void file_trunc(char* filePath){
   }
 }
 
+void print_objects(Object* objet[],int size){
+  for (int i=0; i<size ; i++){
+    printf("%s %d\n", objet[i]->name, objet[i]->solid);
+  }
+}
+
+			
+
+			
+  
 
 void change_objects(Object** tab, unsigned nbObj, char *file){
   int fd = open(file, O_RDWR);
@@ -65,15 +75,14 @@ void change_objects(Object** tab, unsigned nbObj, char *file){
   lseek(fd, sizeof(int)*width*height, SEEK_CUR);    // On se déplace jusqu'aux objets
 
   for(int i = 0; i < nbObj; i++){
-    write(saveMap, tab[i]->frames, sizeof(unsigned));
-    write(saveMap, tab[i]->solid, sizeof(int));
-    write(saveMap, tab[i]->destructible, sizeof(int));
-    write(saveMap, tab[i]->collectible, sizeof(int));
-    write(saveMap, tab[i]->generator, sizeof(int));
-    write(saveMap, tab[i]->sizeName, sizeof(int));
-    write(saveMap, tab[i]->name, sizeof(char)*tab[i]->sizeName);
+    write(fd, &tab[i]->frames, sizeof(unsigned));
+    write(fd, &tab[i]->solid, sizeof(int));
+    write(fd, &tab[i]->destructible, sizeof(int));
+    write(fd, &tab[i]->collectible, sizeof(int));
+    write(fd, &tab[i]->generator, sizeof(int));
+    write(fd, &tab[i]->sizeName, sizeof(int));
+    write(fd, &tab[i]->name, sizeof(char)*tab[i]->sizeName);
   }
-
   file_trunc(file);
 }
 
@@ -218,7 +227,7 @@ int main (int argc, char **argv){
     case 'O':
       lseek(fd, 2*sizeof(unsigned) ,SEEK_SET);
       read(fd, &buffer, sizeof(unsigned));
-      unsigned newNbObj = (argc - 3) / 6;
+      unsigned newNbObj = (argc - 3) / 6;                   ///!\\\ buffer = 0 ? 
       if (newNbObj < buffer){
 	puts("Less objects than expected \n");
 	exit(EXIT_FAILURE);
@@ -239,8 +248,7 @@ int main (int argc, char **argv){
     change_size(newHeight, newWidth, file);
   }
   if (setobj !=0){
-    printf("setobjects is what you need \n");
-
+    // printf("%d \n", setobj);
     // On Passe les arguments dans un tableau
     Object* Objets[setobj];
     unsigned tmpFra;
@@ -250,7 +258,8 @@ int main (int argc, char **argv){
     int tmpGen;
     int tmpSize ;
     char* tmpName;
-    for(int i = 3, j = 0; i < argc; i += 6, j++){
+    printf("%s\n", argv[4]);
+    for(int i = 3, j = 0; i < argc-1; i += 6, j++){
       tmpSize = strlen(argv[i]);
       tmpName = argv[i];
       if (strcmp("destructible", argv[i+3]) == 0){
@@ -283,7 +292,10 @@ int main (int argc, char **argv){
       Objets[j]->name = tmpName;
     }
     //On effectue les changements
+    print_objects(Objets, setobj);
     change_objects(Objets, setobj, argv[1]);
+    printf("setobjects is what you need \n");
+
   }
   
   close(fd);

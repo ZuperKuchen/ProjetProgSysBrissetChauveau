@@ -87,6 +87,66 @@ void change_objects(Object** tab, unsigned nbObj, char *file){
 }
 
 
+void prune_objects(char *file){
+  int fd = open(file, O_RDWR);
+
+  int width;
+  int height;
+  int nbObj;
+  read(fd, &width, sizeof(unsigned));
+  read(fd, &height, sizeof(unsigned));
+  read(fd, &nbObj, sizeof(unsigned));
+
+  bool used[nbObj] = {false};
+  int tmp;
+  int newNbObj;
+  
+  for(int i = 0; i < width*height; i++){
+    read(fd, &tmp, sizeof(int));
+    if(tmp >= 0){
+      if(!used[tmp]) newNbObj ++;
+      used[tmp] = true;
+    }
+  }
+
+  int size[newNbObj];
+  char* str[newNbObj];
+  int tmpPos;
+  int curObj = 0;
+  int posObj = lseek(fd, 0, SEEK_CUR);
+
+  for(int i = 0; i < nbObj; i++){
+    if(used[i]){
+      tmpPos = lseek(fd, 0, SEEK_CUR);
+      lseek(fd, sizeof(unsigned)+sizeof(int)*4, SEEK_CUR);
+      read(fd, &size[curObj], sizeof(int));
+      lseek(fd, tmpPos, SEEK_SET);
+      
+      str[curObj] = malloc(sizeof(unsigned)+sizeof(int)*5+sizeof(char)*size[curObj]);
+      read(fd, &str[curObj], sizeof(unsigned)+sizeof(int)*5+sizeof(char)*size[curObj]);
+
+      curObj ++;
+    }
+    else{
+      lseek(fd, sizeof(unsigned)+sizeof(int)*4, SEEK_CUR);
+      read(fd, &tmpPos, sizeof(int));
+      lseek(fd, sizeof(char)*tmpPos, SEEK_CUR);
+    }
+  }
+
+  lseek(fd, posObj, SEEK_SET);
+
+  for(int i = 0; i < newNbObj; i++){
+    write(fd, &str[i], sizeof(unsigned)+sizeof(int)*5+sizeof(char)*size[i]);
+  }
+
+  lseek(fd, sizeof(unsigned)*2, SEEK_SET);
+  write(fd, &newNbObj, sizeof(unsigned));
+
+  file_trunc(file);
+}
+
+
 void change_size(int newHeight, int newWidth, char *file){
   int saveMap = open(file, O_RDWR); 
   int width;

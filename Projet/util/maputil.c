@@ -52,17 +52,6 @@ void file_trunc(char* filePath){
   }
 }
 
-void print_objects(Object* objet[],int size){
-  for (int i=0; i<size ; i++){
-    printf("%s %d\n", objet[i]->name, objet[i]->solid);
-  }
-}
-
-			
-
-			
-  
-
 void change_objects(Object** tab, unsigned nbObj, char *file){
   int fd = open(file, O_RDWR);
   int width;
@@ -97,7 +86,10 @@ void prune_objects(char *file){
   read(fd, &height, sizeof(unsigned));
   read(fd, &nbObj, sizeof(unsigned));
 
-  bool used[nbObj] = {false};
+  bool used[nbObj];
+  for (int i=0; i < nbObj; i++){
+    used[i] = false;
+  }
   int tmp;
   int newNbObj;
   
@@ -204,11 +196,79 @@ void change_size(int newHeight, int newWidth, char *file){
   file_trunc(file);
 }
 
-/*                    
+void args_to_objects(Object** Objets, int argc, char** argv){
+  unsigned tmpFra;
+  int tmpSol;
+  int tmpDestruct;
+  int tmpCol;
+  int tmpGen;
+  int tmpSize;
+  char* tmpName;
+  printf("%s\n", argv[3]);
+  for(int i = 3, j = 0; i < argc-1; i += 6, j++){
+    if (i != 3){
+      tmpName = argv[i];
+    }
+    else tmpName = argv[2];
+    tmpSize = strlen(argv[i]);    
+    tmpFra = atoi(argv[i+1]);
+    if (strcmp("destructible", argv[i+3]) == 0){
+      tmpDestruct = 1;
+    }
+    else tmpDestruct = 0;
+    if (strcmp("collectible", argv[i+4]) == 0){
+      tmpCol = 1;
+    }
+    else tmpCol = 0;
+    if (strcmp("generator",argv[i+5]) == 0){
+      tmpGen = 1;
+    }
+    else tmpGen = 0;
+
+    if (strcmp("air",argv[i+2]) == 0){
+      tmpSol = 0;
+    }
+    else if (strcmp("semi-solid",argv[i+2]) == 0){
+      tmpSol = 1;
+    }
+    else tmpSol = 2;
+    Objets[j] = malloc(sizeof(Object));
+    Objets[j]->frames = tmpFra;
+    Objets[j]->solid = tmpSol;
+    Objets[j]->destructible = tmpDestruct;
+    Objets[j]->collectible = tmpCol;
+    Objets[j]->generator = tmpGen;
+    Objets[j]->sizeName = tmpSize;
+    Objets[j]->name = tmpName;
+  }
+}
+
+/**
+ *
+ *
+ *               Fonctions de test
+ *
+ *
+ **/
+
+void print_objects(Object* objet[],int size){
+  for (int i=0; i<size ; i++){
+    printf("%s %d %d %d %d %d\n", objet[i]->name, objet[i]->frames, objet[i]->solid, objet[i]->destructible, objet[i]->collectible, objet[i]->generator);
+  }
+}
+
+void print_args(int argc, char** argv){
+  for (int i = 0; i < argc; i++){
+    printf("%d:%s\n", i, argv[i]);
+  }
+}
+
+
+/**                    
  *
  *            MAIN
  *
- */
+ **/
 
 
 int main (int argc, char **argv){
@@ -218,7 +278,8 @@ int main (int argc, char **argv){
   int fd = open(file, O_RDONLY);
   if (fd == -1) usage(1);
   
-
+  //print_args(argc, argv);
+  
   //Initialisation variables getopt
   static struct option long_options[] = {                                                
     {"getwidth", no_argument, 0,'w'},
@@ -239,7 +300,7 @@ int main (int argc, char **argv){
   int newHeight = 0;
   int newWidth = 0;
   unsigned setobj = 0;
-  
+  int pruneObj = 0;
   unsigned int buffer;
   
   while( (opt = getopt_long(argc, argv, optstring, long_options, &long_index)) != -1){
@@ -296,6 +357,7 @@ int main (int argc, char **argv){
       break;
     case 'p':
       printf("--pruneobjects : %c \n", opt);
+      pruneObj = 1;
       break;
     default:
       usage(1);
@@ -304,60 +366,22 @@ int main (int argc, char **argv){
   }  
   
   // TRAITEMENT
-  if( newHeight != 0 || newWidth != 0){
+  if (newHeight != 0 || newWidth != 0){
     change_size(newHeight, newWidth, file);
   }
-  if (setobj !=0){
-    // printf("%d \n", setobj);
-    // On Passe les arguments dans un tableau
-    Object* Objets[setobj];
-    unsigned tmpFra;
-    int tmpSol;
-    int tmpDestruct;
-    int tmpCol;
-    int tmpGen;
-    int tmpSize ;
-    char* tmpName;
-    printf("%s\n", argv[4]);
-    for(int i = 3, j = 0; i < argc-1; i += 6, j++){
-      tmpSize = strlen(argv[i]);
-      tmpName = argv[i];
-      if (strcmp("destructible", argv[i+3]) == 0){
-	tmpDestruct = 1;
-      }
-      else tmpDestruct = 0;
-      if (strcmp("collectible", argv[i+4]) == 0){
-	tmpCol = 1;
-      }
-      else tmpCol = 0;
-      if (strcmp("generator",argv[i+5]) == 0){
-	tmpGen = 1;
-      }
-      else tmpGen = 0;
-      tmpFra = atoi(argv[i+1]);
-      if (strcmp("air",argv[i+2]) == 0){
-	tmpSol = 0;
-      }
-      else if (strcmp("semi-solid",argv[i+2]) == 0){
-	tmpSol = 1;
-      }
-      else tmpSol = 2;
-      Objets[j] = malloc(sizeof(Object));
-      Objets[j]->frames = tmpFra;
-      Objets[j]->solid = tmpSol;
-      Objets[j]->destructible = tmpDestruct;
-      Objets[j]->collectible = tmpCol;
-      Objets[j]->generator = tmpGen;
-      Objets[j]->sizeName = tmpSize;
-      Objets[j]->name = tmpName;
-    }
-    //On effectue les changements
-    print_objects(Objets, setobj);
-    change_objects(Objets, setobj, argv[1]);
-    printf("setobjects is what you need \n");
-
+  if (pruneObj !=0){
+    prune_objects(file);
   }
-  
+  if (setobj !=0){
+    // On Passe les arguments dans un tableau
+    //print_args(argc, argv);
+    Object* Objets[setobj];
+    args_to_objects(Objets, argc, argv);
+   
+    //On effectue les changements
+    // print_objects(Objets, setobj);
+    change_objects(Objets, setobj, file);
+  }
   close(fd);
   return 1;
 

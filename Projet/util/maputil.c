@@ -53,6 +53,31 @@ void file_trunc(char* filePath){
 }
 
 
+void change_objects(Object** tab, unsigned nbObj, char *file){
+  int fd = open(file, O_RDWR);
+  int width;
+  int height;
+  
+  read(fd, &width, sizeof(unsigned));
+  read(fd, &height, sizeof(unsigned));
+  write(fd, &nbObj, sizeof(unsigned));       // On change le nombre d'objets
+
+  lseek(fd, sizeof(int)*width*height, SEEK_CUR);    // On se déplace jusqu'aux objets
+
+  for(int i = 0; i < nbObj; i++){
+    write(saveMap, tab[i]->frames, sizeof(unsigned));
+    write(saveMap, tab[i]->solid, sizeof(int));
+    write(saveMap, tab[i]->destructible, sizeof(int));
+    write(saveMap, tab[i]->collectible, sizeof(int));
+    write(saveMap, tab[i]->generator, sizeof(int));
+    write(saveMap, tab[i]->sizeName, sizeof(int));
+    write(saveMap, tab[i]->name, sizeof(char)*tab[i]->sizeName);
+  }
+
+  file_trunc(file);
+}
+
+
 void change_size(int newHeight, int newWidth, char *file){
   int saveMap = open(file, O_RDWR); 
   int width;

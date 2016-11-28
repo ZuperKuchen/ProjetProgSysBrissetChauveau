@@ -100,7 +100,6 @@ void change_size(int newHeight, int newWidth, char *file){
   file_trunc(file);
 }
 
-
 /*                    
  *
  *            MAIN
@@ -174,6 +173,7 @@ int main (int argc, char **argv){
       
     case 'H':
       printf("Height set to  %s \n", optarg);
+      newHeight = atoi(optarg);
       break;
       
     case 'W':
@@ -182,8 +182,10 @@ int main (int argc, char **argv){
       break;
     case 'O':
       printf("--setobjects %c et ses arguments %s \n", opt, optarg);
+
+      /*//
       
-      /*FILE* args_file = fopen(optarg, "r");
+      FILE* args_file = fopen(optarg, "r");
       if (args_file != NULL){
 	puts("Ca AVance \n");
       }
@@ -191,9 +193,10 @@ int main (int argc, char **argv){
       fgets(buf,1000, args_file) != NULL;
       printf("%s",buf);
       printf("\n %d \n ",(int) strlen(buf));
-      printf("--setobjects %c et ses arguments %s \n", opt, optarg+6);*/
+      printf("--setobjects %c et ses arguments %s \n", opt, optarg+6);
 
-      
+      //*/
+
       setobj = true;
       break;
     case 'p':

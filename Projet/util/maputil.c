@@ -212,7 +212,7 @@ void args_to_objects(Object** Objets, int argc, char** argv){
       tmpName = argv[i];
     }
     else tmpName = argv[2];
-    tmpSize = strlen(argv[i])+1;    
+    tmpSize = strlen(tmpName)+1;    
     tmpFra = atoi(argv[i+1]);
     if (strcmp("destructible", argv[i+3]) == 0){
       tmpDestruct = 1;

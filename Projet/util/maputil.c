@@ -16,7 +16,7 @@ typedef struct Object{
   int generator;
   int sizeName;
   char* name;
-    }Object;
+}Object;
 
 void usage(int i){
   fprintf(stderr,"maputil <file> --option \n\n --option:--getwitdh\n          --getheight\n          --getobjects\n          --getinfo\n");
@@ -56,6 +56,7 @@ void change_objects(Object** tab, unsigned nbObj, char *file){
   int fd = open(file, O_RDWR);
   int width;
   int height;
+  //char fin = 0;
   
   read(fd, &width, sizeof(unsigned));
   read(fd, &height, sizeof(unsigned));
@@ -70,7 +71,8 @@ void change_objects(Object** tab, unsigned nbObj, char *file){
     write(fd, &tab[i]->collectible, sizeof(int));
     write(fd, &tab[i]->generator, sizeof(int));
     write(fd, &tab[i]->sizeName, sizeof(int));
-    write(fd, &tab[i]->name, sizeof(char)*tab[i]->sizeName);
+    write(fd, tab[i]->name, sizeof(char)*tab[i]->sizeName);
+    //write(fd, &fin, sizeof(char));
   }
   file_trunc(file);
 }
@@ -141,9 +143,9 @@ void prune_objects(char *file){
 
 void change_size(int newHeight, int newWidth, char *file){
   int saveMap = open(file, O_RDWR); 
-  int width;
-  int height;
-  int nbObj;
+  unsigned width;
+  unsigned height;
+  unsigned nbObj;
   read(saveMap, &width, sizeof(unsigned));
   read(saveMap, &height, sizeof(unsigned));
   read(saveMap, &nbObj, sizeof(unsigned));
@@ -210,7 +212,7 @@ void args_to_objects(Object** Objets, int argc, char** argv){
       tmpName = argv[i];
     }
     else tmpName = argv[2];
-    tmpSize = strlen(argv[i]);    
+    tmpSize = strlen(tmpName)+1;    
     tmpFra = atoi(argv[i+1]);
     if (strcmp("destructible", argv[i+3]) == 0){
       tmpDestruct = 1;
@@ -278,7 +280,7 @@ int main (int argc, char **argv){
   int fd = open(file, O_RDONLY);
   if (fd == -1) usage(1);
   
-  //print_args(argc, argv);
+  print_args(argc, argv);
   
   //Initialisation variables getopt
   static struct option long_options[] = {                                                
@@ -374,7 +376,7 @@ int main (int argc, char **argv){
   }
   if (setobj !=0){
     // On Passe les arguments dans un tableau
-    //print_args(argc, argv);
+    print_args(argc, argv);
     Object* Objets[setobj];
     args_to_objects(Objets, argc, argv);
    

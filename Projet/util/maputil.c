@@ -278,7 +278,7 @@ int main (int argc, char **argv){
   int fd = open(file, O_RDONLY);
   if (fd == -1) usage(1);
   
-  //print_args(argc, argv);
+  print_args(argc, argv);
   
   //Initialisation variables getopt
   static struct option long_options[] = {                                                
@@ -374,7 +374,7 @@ int main (int argc, char **argv){
   }
   if (setobj !=0){
     // On Passe les arguments dans un tableau
-    //print_args(argc, argv);
+    print_args(argc, argv);
     Object* Objets[setobj];
     args_to_objects(Objets, argc, argv);
    

@@ -21,6 +21,7 @@ CFLAGS := -O3 -g -std=c99 -Wall -Wno-unused-function
 CFLAGS += -DPADAWAN
 CFLAGS += -I./include
 CFLAGS += $(shell pkg-config SDL2_image SDL2_mixer --cflags)
+LDFLAGS = -lpthread
 LDLIBS := $(shell pkg-config SDL2_image SDL2_mixer --libs)
 
 $(OBJECTS): $(MAKEFILES)

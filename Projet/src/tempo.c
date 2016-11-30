@@ -14,6 +14,7 @@
 //#include "timer.h"
 
 void *param_event;
+pthread_t pid;
 
 // Return number of elapsed µsec since... a long time ago
 static unsigned long get_time (void)
@@ -31,14 +32,14 @@ static unsigned long get_time (void)
 //#ifdef PADAWAN
 
 void handler_sigalrm(int sig){
-  printf("je suis le thread %ld \n", pthread_self());
+  printf("sdl_push_event (%p) appelée au temps %ld\n", param_event, get_time());
 }
 
 
 /* Recupere tout les sigalrm */
 void *demon(void *n){
 
-  printf("sdl_push_event (%p) appelée au temps %ld\n", param_event, get_time());
+  printf("debut du demon\n");
   
   struct sigaction act;
   act.sa_handler = handler_sigalrm;
@@ -47,8 +48,8 @@ void *demon(void *n){
   sigaction(SIGALRM, &act, NULL);
   
   sigset_t mask;
-  sigfillset(&mask);
-  sigdelset(&mask, SIGALRM);
+  sigemptyset(&mask);
+  //sigdelset(&mask, SIGALRM);
    
   while (1){
     sigsuspend(&mask);
@@ -62,7 +63,7 @@ void *demon(void *n){
 int timer_init (void)
 {
   //crée le thread qui récupére le sigalrm
-  pthread_t pid;
+  
   pthread_create(&pid, NULL, demon, NULL);
  
   //bloque le sigalrm pour le thread principal
@@ -71,7 +72,7 @@ int timer_init (void)
   pthread_sigmask(SIG_BLOCK,&bloquer_sigalrm,NULL); 
 
   //attend la fin du thread "demon"
-  pthread_join(pid, NULL);
+  //pthread_join(pid, NULL);
  
   return 0; // Implementation not ready
 }
@@ -82,7 +83,7 @@ void timer_set (Uint32 delay, int timer_type, void *param)
 
   struct itimerval time;
   time.it_interval.tv_sec=0;
-  time.it_interval.tv_usec=500000;
+  time.it_interval.tv_usec=delay;
   time.it_value.tv_sec=0;
   time.it_value.tv_usec=delay;
   setitimer(ITIMER_REAL,&time,NULL);
@@ -90,8 +91,11 @@ void timer_set (Uint32 delay, int timer_type, void *param)
 }
 
 int main (void){
-  timer_set(800, 0, "Roger");
-
+  printf("debut\n");
+  timer_init();
+  timer_set(80000, 0, NULL);
+   pthread_join(pid, NULL);
+  printf("fin\n");
   return EXIT_SUCCESS;
 }
 

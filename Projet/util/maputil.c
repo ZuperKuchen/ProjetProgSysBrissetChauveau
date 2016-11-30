@@ -56,15 +56,14 @@ void change_objects(Object** tab, unsigned nbObj, char *file){
   int fd = open(file, O_RDWR);
   int width;
   int height;
-  //char fin = 0;
   
   read(fd, &width, sizeof(unsigned));
   read(fd, &height, sizeof(unsigned));
-  write(fd, &nbObj, sizeof(unsigned));       // On change le nombre d'objets
+  write(fd, &nbObj, sizeof(unsigned));       //On change le nombre d'objets
 
-  lseek(fd, sizeof(int)*width*height, SEEK_CUR);    // On se déplace jusqu'aux objets
+  lseek(fd, sizeof(int)*width*height, SEEK_CUR);    //On se déplace jusqu'aux objets
 
-  for(int i = 0; i < nbObj; i++){
+  for(int i = 0; i < nbObj; i++){                   //On écrit les nouveaux objets
     write(fd, &tab[i]->frames, sizeof(unsigned));
     write(fd, &tab[i]->solid, sizeof(int));
     write(fd, &tab[i]->destructible, sizeof(int));
@@ -72,9 +71,8 @@ void change_objects(Object** tab, unsigned nbObj, char *file){
     write(fd, &tab[i]->generator, sizeof(int));
     write(fd, &tab[i]->sizeName, sizeof(int));
     write(fd, tab[i]->name, sizeof(char)*tab[i]->sizeName);
-    //write(fd, &fin, sizeof(char));
   }
-  file_trunc(file);
+  file_trunc(file);             //Et on finit par supprimer les données inutiles
 }
 
 
@@ -88,9 +86,11 @@ void prune_objects(char *file){
   read(fd, &height, sizeof(unsigned));
   read(fd, &nbObj, sizeof(unsigned));
 
+  // PARTIE 1 // On regarde quels sont les objets utilisés sur la carte
+
   bool used[nbObj];
   for (int i=0; i < nbObj; i++){
-    used[i] = false;
+    used[i] = false;                         //On initialise tous les objets à False
   }
   int tmp;
   int newNbObj;
@@ -98,11 +98,13 @@ void prune_objects(char *file){
   for(int i = 0; i < width*height; i++){
     read(fd, &tmp, sizeof(int));
     if(tmp >= 0){
-      if(!used[tmp]) newNbObj ++;
-      used[tmp] = true;
+      if(!used[tmp]) newNbObj ++;            //On compte le nombre d'objets utilisés
+      used[tmp] = true;                      //On met à TRUE les objets utilisés
     }
   }
 
+  // PARTIE 2 // On récupère les informations des objets utilisés dans un tableau de chaines de charactères
+  
   int size[newNbObj];
   char* str[newNbObj];
   int tmpPos;
@@ -110,32 +112,34 @@ void prune_objects(char *file){
   int posObj = lseek(fd, 0, SEEK_CUR);
 
   for(int i = 0; i < nbObj; i++){
-    if(used[i]){
+    if(used[i]){                                                                        //Si l'objet est utile on le récupère
       tmpPos = lseek(fd, 0, SEEK_CUR);
       lseek(fd, sizeof(unsigned)+sizeof(int)*4, SEEK_CUR);
       read(fd, &size[curObj], sizeof(int));
       lseek(fd, tmpPos, SEEK_SET);
       
       str[curObj] = malloc(sizeof(unsigned)+sizeof(int)*5+sizeof(char)*size[curObj]);
-      read(fd, &str[curObj], sizeof(unsigned)+sizeof(int)*5+sizeof(char)*size[curObj]);
+      read(fd, str[curObj], sizeof(unsigned)+sizeof(int)*5+sizeof(char)*size[curObj]);
 
       curObj ++;
     }
-    else{
+    else{                                                                               //S'il ne l'est pas on passe au suivant
       lseek(fd, sizeof(unsigned)+sizeof(int)*4, SEEK_CUR);
       read(fd, &tmpPos, sizeof(int));
       lseek(fd, sizeof(char)*tmpPos, SEEK_CUR);
     }
   }
 
+  // PARTIE 3 // On réécrit les objets utiles 
+  
   lseek(fd, posObj, SEEK_SET);
 
   for(int i = 0; i < newNbObj; i++){
-    write(fd, &str[i], sizeof(unsigned)+sizeof(int)*5+sizeof(char)*size[i]);
+    write(fd, str[i], sizeof(unsigned)+sizeof(int)*5+sizeof(char)*size[i]);
   }
 
   lseek(fd, sizeof(unsigned)*2, SEEK_SET);
-  write(fd, &newNbObj, sizeof(unsigned));
+  write(fd, &newNbObj, sizeof(unsigned));             //On réécrit le bon nombre d'objets
 
   file_trunc(file);
 }

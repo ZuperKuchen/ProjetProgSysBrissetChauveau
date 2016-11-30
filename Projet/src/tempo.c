@@ -2,7 +2,7 @@
 #define _GNU_SOURCE
 #define _XOPEN_SOURCE >= 500
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -11,7 +11,9 @@
 #include <signal.h>
 #include <pthread.h>
 
-#include "timer.h"
+//#include "timer.h"
+
+void *param_event;
 
 // Return number of elapsed µsec since... a long time ago
 static unsigned long get_time (void)
@@ -26,39 +28,17 @@ static unsigned long get_time (void)
   return tv.tv_sec * 1000000UL + tv.tv_usec;
 }
 
-
-void* param_event;
-/*
- *Le stockage des différent timer est implémenté sous la forme d'une file de priorité
- *
- *param_event stock l'event à faire à la fin du timer
- *delay stock le temps du timer
- *next_timer pointe sur le timer suivant si il existe, NULL sinon
- *same_time pointe sur le timer qui se termine en même temps que lui 
- */
-typedef struct timer_event{
-  void* param_event;
-  int delay;
-  struct timer_event * next_timer;
-  struct timer_event * same_time;
-}timer_event;
-
-void enfiler_timer(timer_event *premier,timer_event *timer){
-  if(premier == NULL)
-}
+//#ifdef PADAWAN
 
 void handler_sigalrm(int sig){
   printf("je suis le thread %ld \n", pthread_self());
 }
 
 
-
-#ifdef PADAWAN
-
 /* Recupere tout les sigalrm */
 void *demon(void *n){
 
-  printf("pid:%d thread:%ld\n",getpid(), pthread_self());
+  printf("sdl_push_event (%p) appelée au temps %ld\n", param_event, get_time());
   
   struct sigaction act;
   act.sa_handler = handler_sigalrm;
@@ -74,13 +54,13 @@ void *demon(void *n){
     sigsuspend(&mask);
   }
 
+  pthread_exit(NULL);
+
 }
 
 // timer_init returns 1 if timers are fully implemented, 0 otherwise
 int timer_init (void)
 {
-  printf("pid : %d thread parent: %ld\n", getpid(),pthread_self() );
-
   //crée le thread qui récupére le sigalrm
   pthread_t pid;
   pthread_create(&pid, NULL, demon, NULL);
@@ -96,17 +76,23 @@ int timer_init (void)
   return 0; // Implementation not ready
 }
 
-void timer_set (Uint32 delay, void *param)
+void timer_set (Uint32 delay, int timer_type, void *param)
 {
-param_event = param;
+  param_event = param;
 
   struct itimerval time;
   time.it_interval.tv_sec=0;
   time.it_interval.tv_usec=500000;
   time.it_value.tv_sec=0;
-  time.it_value.tv_usec=500000;
+  time.it_value.tv_usec=delay;
   setitimer(ITIMER_REAL,&time,NULL);
 
 }
 
-#endif
+int main (void){
+  timer_set(800, 0, "Roger");
+
+  return EXIT_SUCCESS;
+}
+
+//#endif

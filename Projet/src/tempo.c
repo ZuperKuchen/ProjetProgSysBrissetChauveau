@@ -129,7 +129,7 @@ void defiler(int sig){
 
 //Déclenche l'événement à la reception du sigalrm
 void handler_sigalrm(int sig){
-  //printf("sdl_push_event (%p) appelée au temps %ld\n", param_event, get_time());
+  printf("sdl_push_event (%p) appelée au temps %ld\n", premier_timer->param, get_time());
   printf("handler\n");
   kill(getpid(), SIGUSR1);
 }
@@ -181,11 +181,11 @@ int timer_init (void)
 
 void timer_set (Uint32 delay, void *param)
 {
-  param_event = param;
+  enfiler_timer(delay, param);
 
   struct itimerval time;
   time.it_interval.tv_sec=0;
-  time.it_interval.tv_usec=delay;
+  time.it_interval.tv_usec=0;
   time.it_value.tv_sec=0;
   time.it_value.tv_usec=delay;
   setitimer(ITIMER_REAL,&time,NULL);
@@ -194,14 +194,13 @@ void timer_set (Uint32 delay, void *param)
 
 void sdl_push_event (void *param){
 
-
 }
 
 int main (void){
   printf("debut\n");
   timer_init();
   timer_set(800000, NULL);
-   pthread_join(pid, NULL);
+  pthread_join(pid, NULL);
   printf("fin\n");
   return EXIT_SUCCESS;
 }

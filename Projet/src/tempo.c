@@ -29,6 +29,7 @@ static unsigned long get_time (void)
   return tv.tv_sec * 1000000UL + tv.tv_usec;
 }
 
+void timer_set (Uint32 delay, void *param);
 /************ Gestion de creation de plusieur timer ************/
 
 /*
@@ -48,6 +49,14 @@ typedef struct file_timer{
   struct file_timer *same_time;
 }file_timer;
 
+typedef struct fin_timer{
+  Uint32 fin;
+  void *param;
+  struct fin_timer *next;
+}fin_timer;
+
+fin_timer *first;
+
 file_timer *premier_timer;
 
 /*
@@ -64,37 +73,50 @@ void enfiler_timer(Uint32 delay, void *param){
   e_toadd->param = param;
   e_toadd->next = NULL;
   e_toadd->same_time = NULL;
-
-  if(premier_timer == NULL)
+  printf("On enfile %s: ", (char*)param);
+  if(premier_timer == NULL){
     premier_timer = e_toadd;
+    printf("je suis le seul et l'unique\n");
+  }
   else {
     //cas ou e_toadd se termine avant premier_timer
     if(e_toadd->fin < premier_timer->fin - 20){
       e_toadd->next = premier_timer;
       premier_timer = e_toadd;
+      printf("en position 1 devant le premier\n");
       return;
-    }
+      }
     file_timer *curseur = premier_timer;
+    //cas ou il n'y a qu'un timer dans la file
+    if(curseur->next == NULL){
+	curseur->next = e_toadd;
+	printf("Je me place en position 2 ?\n");
+	return;
+    }
     while(curseur->next != NULL){
       //cas ou la fin est proche d'un timer
       // 20 est un magic number qui nous permet de dire que la fin de ces timer est très court
       if(curseur->fin - 20 < e_toadd->fin && curseur->fin + 20 > e_toadd->fin){
 	e_toadd->same_time = curseur->same_time;
 	curseur->same_time = e_toadd;
+	printf("same time\n");
 	break;
       }
       // cas où la fin de to_add est comprise entre la fin du curseur et la fin du suivant
       if(curseur->fin + 20 < e_toadd->fin && curseur->next->fin - 20 > e_toadd->fin){
 	e_toadd->next = curseur->next;
 	curseur->next = e_toadd;
+	printf(" au milieu\n");
 	break;
       }
       // cas où la fin de la file a été atteinte
       if(curseur->next == NULL){
 	curseur->next = e_toadd;
+	printf(" à la fin \n");
 	break;
       }
     }
+    printf(" aie \n");
   }
 }
 
@@ -103,8 +125,13 @@ void enfiler_timer(Uint32 delay, void *param){
  * le signal sigusr1 est envoyé lorsque le thread a bien recu sigalrm et a ini de traiter ce signal
  */
 void defiler(int sig){
-  printf("defileur\n");
-  if(premier_timer !=NULL){
+
+  printf("On defile: %s \n", (char*) premier_timer->param);
+  premier_timer = premier_timer->next;
+  timer_set(1, premier_timer->param);
+}
+
+  /*if(premier_timer !=NULL){
     file_timer *tmp = premier_timer;
     if(premier_timer->same_time !=NULL){
       premier_timer =tmp->same_time;
@@ -112,7 +139,7 @@ void defiler(int sig){
       tmp->next = NULL;
       tmp->same_time= NULL;
       free(tmp);
-      kill(getpid(), SIGALRM);
+      //kill(getpid(), SIGALRM);
     }
     else{
       premier_timer = tmp->next;
@@ -120,7 +147,8 @@ void defiler(int sig){
       free(tmp);
     }
   }
-}
+  */
+
     
   
 
@@ -129,7 +157,7 @@ void defiler(int sig){
 
 //Déclenche l'événement à la reception du sigalrm
 void handler_sigalrm(int sig){
-  printf("sdl_push_event (%p) appelée au temps %ld\n", premier_timer->param, get_time());
+  printf("sdl_push_event (%s) appelée au temps %ld\n", (char*)premier_timer->param, get_time());
   printf("handler\n");
   kill(getpid(), SIGUSR1);
 }
@@ -149,9 +177,9 @@ void *demon(void *n){
   sigemptyset(&mask);
   //sigdelset(&mask, SIGALRM);
    
-  while (1)
+  while (1){
     sigsuspend(&mask);
-
+  }
 }
 //#ifdef PADAWAN
 
@@ -179,19 +207,89 @@ int timer_init (void)
   return 0; // Implementation not ready
 }
 
+void set_fin_timer(Uint32 delay, void* param){
+  fin_timer *tmp_end = malloc(sizeof(fin_timer));
+  tmp_end->fin = get_time() + delay;
+  tmp_end->param = param;
+  tmp_end->next = NULL;
+  // Cas où aucun signal en attente
+  printf(" %s se place :", (char *)param);
+  if (first == NULL){
+    printf("je suis le seul et l'unique\n");
+    first = tmp_end;
+    return;
+  }
+  //Cas où le nouveau signal se termine avant first
+  if (first->fin > tmp_end->fin){
+      tmp_end->next = first;
+      first = tmp_end;
+      return;
+  }
+  //Cas où un seul signal en attente
+  if (first->next == NULL){
+    first->next = tmp_end;
+    return;
+  }
+  //Cas Où plusieurs signaux sont en attente
+  fin_timer *tmp_first = tmp_first;
+  while (first->next !=  NULL){
+    //Cas ou tmp_fin se situe entre first et first->next
+    if(first->next->fin > tmp_end->fin){
+      tmp_end->next = first->next;
+      first->next = tmp_end;
+      first = tmp_first;
+      return;
+    }
+    first = first->next;
+  }
+  //Cas ou le nouveau signal se termine en dernier
+  first->next = tmp_end;
+  first = tmp_first;
+}
+ 
+
+//Si delay = 0 , set le prochain timer
+
 void timer_set (Uint32 delay, void *param)
 {
-  enfiler_timer(delay, param);
-
+  Uint32 tmp_delay = get_time() + delay;
+  if (delay !=0){
+    enfiler_timer(delay, param);
+    if (tmp_delay > premier_timer->fin){
+      // le nouveau timer ne se termine pas avant premier_timer : pas besoin de relancer de timer
+      return;
+    }
+  }
+  if(premier_timer == NULL){
+    printf("file vide\n");
+    return;
+  }
+  tmp_delay = premier_timer->fin - get_time();
   struct itimerval time;
   time.it_interval.tv_sec=0;
   time.it_interval.tv_usec=0;
-  time.it_value.tv_sec=0;
-  time.it_value.tv_usec=delay;
-  setitimer(ITIMER_REAL,&time,NULL);
-
+  time.it_value.tv_sec = tmp_delay / 1000000;
+  time.it_value.tv_usec = tmp_delay%1000000;
+  if( setitimer(ITIMER_REAL,&time,NULL) == -1){
+    printf("timer non set\n");
+  }
+  else printf("timer set\n");
 }
 
+  /*
+  set_fin_timer(delay, param);
+  Uint32 tmp_delay = first->fin - get_time();
+  struct itimerval time;
+  time.it_interval.tv_sec=0;
+  time.it_interval.tv_usec=0;
+  time.it_value.tv_sec = tmp_delay / 1000000;
+  time.it_value.tv_usec = tmp_delay%1000000;
+   if( setitimer(ITIMER_REAL,&time,NULL) == -1){
+    printf("timer non set\n");
+  }
+  else printf("timer set\n");
+  */
+ 
 void sdl_push_event (void *param){
 
 }
@@ -199,8 +297,12 @@ void sdl_push_event (void *param){
 int main (void){
   printf("debut\n");
   timer_init();
-  timer_set(800000, NULL);
-  pthread_join(pid, NULL);
+  timer_set(4000000,"bombe 1");
+  timer_set(4000000, "bombe 2");
+  timer_set(2000000, "bombe 3");
+  if (pthread_join(pid, NULL) != 0){
+    printf("erreur pthread_join \n");
+  }
   printf("fin\n");
   return EXIT_SUCCESS;
 }

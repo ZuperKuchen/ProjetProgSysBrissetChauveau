@@ -42,20 +42,11 @@ void timer_set (Uint32 delay, void *param);
  * same_time : pointe sur un élément devant se terminer en même temps
  */ 
 typedef struct file_timer{
-  Uint32 delay;
   Uint32 fin;
   void *param;
   struct file_timer *next;
   struct file_timer *same_time;
 }file_timer;
-
-typedef struct fin_timer{
-  Uint32 fin;
-  void *param;
-  struct fin_timer *next;
-}fin_timer;
-
-fin_timer *first;
 
 file_timer *premier_timer;
 
@@ -67,8 +58,7 @@ file_timer *premier_timer;
  */
 void enfiler_timer(Uint32 delay, void *param){
   //Initialisation de l'élement a ajouter
-  file_timer *e_toadd = (file_timer *) malloc(sizeof(file_timer));
-  e_toadd->delay = delay;
+  file_timer *e_toadd = (file_timer *) malloc(sizeof(file_timer));;
   e_toadd->fin = get_time() + delay;
   e_toadd->param = param;
   e_toadd->next = NULL;
@@ -127,31 +117,16 @@ void enfiler_timer(Uint32 delay, void *param){
 void defiler(int sig){
 
   printf("On defile: %s \n", (char*) premier_timer->param);
-  premier_timer = premier_timer->next;
-  timer_set(1, premier_timer->param);
+  if (premier_timer->next != NULL ) {
+    premier_timer = premier_timer->next;
+    printf("prochain timer: %s \n", (char*) premier_timer->param);
+    timer_set(0, premier_timer->param);
+    return;
+  }
+  else premier_timer = NULL ;  
 }
 
-  /*if(premier_timer !=NULL){
-    file_timer *tmp = premier_timer;
-    if(premier_timer->same_time !=NULL){
-      premier_timer =tmp->same_time;
-      premier_timer->next = tmp->next;
-      tmp->next = NULL;
-      tmp->same_time= NULL;
-      free(tmp);
-      //kill(getpid(), SIGALRM);
-    }
-    else{
-      premier_timer = tmp->next;
-      tmp->next = NULL;
-      free(tmp);
-    }
-  }
-  */
-
-    
-  
-
+ 
 /***************************************************************/
 
 
@@ -205,50 +180,8 @@ int timer_init (void)
   sigaction(SIGUSR1,&act_usr1, NULL);
  
   return 0; // Implementation not ready
+  //return 1; //Implementation ready
 }
-
-void set_fin_timer(Uint32 delay, void* param){
-  fin_timer *tmp_end = malloc(sizeof(fin_timer));
-  tmp_end->fin = get_time() + delay;
-  tmp_end->param = param;
-  tmp_end->next = NULL;
-  // Cas où aucun signal en attente
-  printf(" %s se place :", (char *)param);
-  if (first == NULL){
-    printf("je suis le seul et l'unique\n");
-    first = tmp_end;
-    return;
-  }
-  //Cas où le nouveau signal se termine avant first
-  if (first->fin > tmp_end->fin){
-      tmp_end->next = first;
-      first = tmp_end;
-      return;
-  }
-  //Cas où un seul signal en attente
-  if (first->next == NULL){
-    first->next = tmp_end;
-    return;
-  }
-  //Cas Où plusieurs signaux sont en attente
-  fin_timer *tmp_first = tmp_first;
-  while (first->next !=  NULL){
-    //Cas ou tmp_fin se situe entre first et first->next
-    if(first->next->fin > tmp_end->fin){
-      tmp_end->next = first->next;
-      first->next = tmp_end;
-      first = tmp_first;
-      return;
-    }
-    first = first->next;
-  }
-  //Cas ou le nouveau signal se termine en dernier
-  first->next = tmp_end;
-  first = tmp_first;
-}
- 
-
-//Si delay = 0 , set le prochain timer
 
 void timer_set (Uint32 delay, void *param)
 {
@@ -273,22 +206,8 @@ void timer_set (Uint32 delay, void *param)
   if( setitimer(ITIMER_REAL,&time,NULL) == -1){
     printf("timer non set\n");
   }
-  else printf("timer set\n");
+  else printf("timer set fin prevu pour : %u\n", premier_timer->fin);
 }
-
-  /*
-  set_fin_timer(delay, param);
-  Uint32 tmp_delay = first->fin - get_time();
-  struct itimerval time;
-  time.it_interval.tv_sec=0;
-  time.it_interval.tv_usec=0;
-  time.it_value.tv_sec = tmp_delay / 1000000;
-  time.it_value.tv_usec = tmp_delay%1000000;
-   if( setitimer(ITIMER_REAL,&time,NULL) == -1){
-    printf("timer non set\n");
-  }
-  else printf("timer set\n");
-  */
  
 void sdl_push_event (void *param){
 
@@ -298,7 +217,7 @@ int main (void){
   printf("debut\n");
   timer_init();
   timer_set(4000000,"bombe 1");
-  timer_set(4000000, "bombe 2");
+  timer_set(4005000, "bombe 2");
   timer_set(2000000, "bombe 3");
   if (pthread_join(pid, NULL) != 0){
     printf("erreur pthread_join \n");

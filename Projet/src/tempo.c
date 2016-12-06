@@ -2,7 +2,7 @@
 #define _GNU_SOURCE
 #define _XOPEN_SOURCE >= 500
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,12 +10,12 @@
 #include <sys/time.h>
 #include <signal.h>
 #include <pthread.h>
+#include "timer.h"
 
-//#include "timer.h"
 
-void *param_event;
-pthread_t pid;
+/*void sdl_push_event(void *param){
 
+  }*/
 // Return number of elapsed µsec since... a long time ago
 static unsigned long get_time (void)
 {
@@ -28,6 +28,10 @@ static unsigned long get_time (void)
   
   return tv.tv_sec * 1000000UL + tv.tv_usec;
 }
+
+#ifdef PADAWAN
+pthread_t pid;
+
 
 void timer_set (Uint32 delay, void *param);
 /************ Gestion de creation de plusieur timer ************/
@@ -133,9 +137,12 @@ void defiler(int sig){
 //Déclenche l'événement à la reception du sigalrm
 void handler_sigalrm(int sig){
   printf("sdl_push_event (%s) appelée au temps %ld\n", (char*)premier_timer->param, get_time());
+  sdl_push_event(premier_timer->param);
   printf("handler\n");
   kill(getpid(), SIGUSR1);
 }
+
+
 
 // Demon recuperateur des sigalrm 
 void *demon(void *n){
@@ -156,6 +163,7 @@ void *demon(void *n){
     sigsuspend(&mask);
   }
 }
+
 //#ifdef PADAWAN
 
 // timer_init returns 1 if timers are fully implemented, 0 otherwise
@@ -179,8 +187,8 @@ int timer_init (void)
 
   sigaction(SIGUSR1,&act_usr1, NULL);
  
-  return 0; // Implementation not ready
-  //return 1; //Implementation ready
+  //return 0; // Implementation not ready
+  return 1; //Implementation ready
 }
 
 void timer_set (Uint32 delay, void *param)
@@ -209,10 +217,8 @@ void timer_set (Uint32 delay, void *param)
   else printf("timer set fin prevu pour : %u\n", premier_timer->fin);
 }
  
-void sdl_push_event (void *param){
 
-}
-
+/*
 int main (void){
   printf("debut\n");
   timer_init();
@@ -225,5 +231,5 @@ int main (void){
   printf("fin\n");
   return EXIT_SUCCESS;
 }
-
-//#endif
+*/
+#endif

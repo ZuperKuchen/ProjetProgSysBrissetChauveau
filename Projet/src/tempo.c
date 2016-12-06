@@ -46,7 +46,7 @@ void timer_set (Uint32 delay, void *param);
  * same_time : pointe sur un élément devant se terminer en même temps
  */ 
 typedef struct file_timer{
-  Uint32 fin;
+  long unsigned fin;
   void *param;
   struct file_timer *next;
   struct file_timer *same_time;
@@ -136,7 +136,7 @@ void defiler(int sig){
 
 //Déclenche l'événement à la reception du sigalrm
 void handler_sigalrm(int sig){
-  printf("sdl_push_event (%s) appelée au temps %ld\n", (char*)premier_timer->param, get_time());
+  printf("sdl_push_event (%s) appelée au temps %lu\n", (char*)premier_timer->param, get_time());
   sdl_push_event(premier_timer->param);
   printf("handler\n");
   kill(getpid(), SIGUSR1);
@@ -214,17 +214,35 @@ void timer_set (Uint32 delay, void *param)
   if( setitimer(ITIMER_REAL,&time,NULL) == -1){
     printf("timer non set\n");
   }
-  else printf("timer set fin prevu pour : %u\n", premier_timer->fin);
+  else printf("timer set à %lu fin prevu pour : %lu\n", get_time(), premier_timer->fin);
 }
  
-
 /*
 int main (void){
+  unsigned long debut, fin;
+  
   printf("debut\n");
   timer_init();
+  debut = get_time();
+  //
   timer_set(4000000,"bombe 1");
-  timer_set(4005000, "bombe 2");
+  //
+  fin = get_time();
+  printf("temps: %lu \n",fin -debut);
+  debut = get_time();
+  //
+  timer_set(4000010, "bombe 2");
+  //
+  fin = get_time();
+  printf("temps: %lu \n",fin -debut);
+  debut = get_time();
+  //
   timer_set(2000000, "bombe 3");
+  //
+  fin = get_time();
+  printf("temps: %lu \n",fin -debut);
+  //
+  debut = get_time();
   if (pthread_join(pid, NULL) != 0){
     printf("erreur pthread_join \n");
   }

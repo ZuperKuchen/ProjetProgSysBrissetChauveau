@@ -16,6 +16,7 @@
 /*void sdl_push_event(void *param){
 
   }*/
+void set_alarm(Uint32 tmp_delay);
 // Return number of elapsed µsec since... a long time ago
 static unsigned long get_time (void)
 {
@@ -39,7 +40,6 @@ void timer_set (Uint32 delay, void *param);
 /*
  * La gestion se fait par l'implémentation d'une file de priorité 
  *
- * delay : duree avant le sigalrm
  * fin : moment au quel le sigalrm est censé se déclencher
  * param : parametre à envoyer a sdl_push_event
  * next : pointe sur l'élément suivant
@@ -120,14 +120,32 @@ void enfiler_timer(Uint32 delay, void *param){
  */
 void defiler(int sig){
 
+  file_timer * tmp;
+
   printf("On defile: %s \n", (char*) premier_timer->param);
-  if (premier_timer->next != NULL ) {
-    premier_timer = premier_timer->next;
-    printf("prochain timer: %s \n", (char*) premier_timer->param);
-    timer_set(0, premier_timer->param);
-    return;
+  if (premier_timer->next != NULL || premier_timer->same_time != NULL ) {
+    int next_time;
+    if(premier_timer->same_time == NULL){
+      tmp = premier_timer;
+      premier_timer = premier_timer->next;
+      // timer_set(premier_timer->fin - tmp->fin, premier_timer->param);
+      next_time = premier_timer->fin - tmp->fin;
+      free(tmp);
+      set_alarm(next_time);
+    }
+    else
+      if(premier_timer->same_time !=NULL){
+	tmp= premier_timer;
+	premier_timer = premier_timer->same_time;
+	free(tmp);
+	kill(getpid(), SIGALRM);
+      }  
+    //printf("prochain timer: %s \n", (char*) premier_timer->param);
+    // timer_set(0, premier_timer->param);
+    
   }
-  else premier_timer = NULL ;  
+  else
+    free(premier_timer);  
 }
 
  
@@ -164,8 +182,6 @@ void *demon(void *n){
   }
 }
 
-//#ifdef PADAWAN
-
 // timer_init returns 1 if timers are fully implemented, 0 otherwise
 int timer_init (void)
 {
@@ -201,11 +217,16 @@ void timer_set (Uint32 delay, void *param)
       return;
     }
   }
-  if(premier_timer == NULL){
+  /* if(premier_timer == NULL){
     printf("file vide\n");
     return;
-  }
-  tmp_delay = premier_timer->fin - get_time();
+    }*/
+  set_alarm(premier_timer->fin - get_time());
+}
+
+
+void set_alarm( Uint32 tmp_delay){
+  
   struct itimerval time;
   time.it_interval.tv_sec=0;
   time.it_interval.tv_usec=0;
@@ -215,8 +236,9 @@ void timer_set (Uint32 delay, void *param)
     printf("timer non set\n");
   }
   else printf("timer set à %lu fin prevu pour : %lu\n", get_time(), premier_timer->fin);
+  
 }
- 
+
 /*
 int main (void){
   unsigned long debut, fin;

@@ -13,9 +13,7 @@
 #include "timer.h"
 
 
-/*void sdl_push_event(void *param){
 
-  }*/
 void set_alarm(Uint32 tmp_delay);
 // Return number of elapsed µsec since... a long time ago
 static unsigned long get_time (void)
@@ -120,18 +118,18 @@ void enfiler_timer(Uint32 delay, void *param){
  */
 void defiler(int sig){
 
-  file_timer * tmp;
+   file_timer * tmp;
 
   printf("On defile: %s \n", (char*) premier_timer->param);
   if (premier_timer->next != NULL || premier_timer->same_time != NULL ) {
-    int next_time;
+    
     if(premier_timer->same_time == NULL){
       tmp = premier_timer;
       premier_timer = premier_timer->next;
       // timer_set(premier_timer->fin - tmp->fin, premier_timer->param);
-      next_time = premier_timer->fin - tmp->fin;
       free(tmp);
-      set_alarm(next_time);
+      // if(premier_timer->fin != 0)
+      set_alarm(premier_timer->fin);
     }
     else
       if(premier_timer->same_time !=NULL){
@@ -145,7 +143,10 @@ void defiler(int sig){
     
   }
   else
-    free(premier_timer);  
+    if(premier_timer !=NULL){
+      free(premier_timer);
+      premier_timer = NULL;
+    }
 }
 
  
@@ -156,7 +157,6 @@ void defiler(int sig){
 void handler_sigalrm(int sig){
   printf("sdl_push_event (%s) appelée au temps %lu\n", (char*)premier_timer->param, get_time());
   sdl_push_event(premier_timer->param);
-  printf("handler\n");
   kill(getpid(), SIGUSR1);
 }
 
@@ -182,14 +182,14 @@ void *demon(void *n){
   }
 }
 
-// timer_init returns 1 if timers are fully implemented, 0 otherwise
-int timer_init (void)
-{
+// timer_init returns 1 if timers are fully implemented, 0 otherwisent timer_init (void)
+int timer_init(){
   //crée le thread qui récupére le sigalrm
   pthread_create(&pid, NULL, demon, NULL);
  
   //bloque le sigalrm pour le thread principal
   sigset_t bloquer_sigalrm;
+  sigemptyset(&bloquer_sigalrm);
   sigaddset(&bloquer_sigalrm, SIGALRM);
   pthread_sigmask(SIG_BLOCK,&bloquer_sigalrm,NULL);
 
@@ -210,18 +210,18 @@ int timer_init (void)
 void timer_set (Uint32 delay, void *param)
 {
   Uint32 tmp_delay = get_time() + delay;
-  if (delay !=0){
+  if (delay >=0){
     enfiler_timer(delay, param);
     if (tmp_delay > premier_timer->fin){
       // le nouveau timer ne se termine pas avant premier_timer : pas besoin de relancer de timer
       return;
     }
   }
-  /* if(premier_timer == NULL){
+   if(premier_timer == NULL){
     printf("file vide\n");
     return;
-    }*/
-  set_alarm(premier_timer->fin - get_time());
+    }
+  set_alarm(delay);
 }
 
 
@@ -230,8 +230,8 @@ void set_alarm( Uint32 tmp_delay){
   struct itimerval time;
   time.it_interval.tv_sec=0;
   time.it_interval.tv_usec=0;
-  time.it_value.tv_sec = tmp_delay / 1000000;
-  time.it_value.tv_usec = tmp_delay%1000000;
+  time.it_value.tv_sec =0;//tmp_delay / 1000000;
+  time.it_value.tv_usec =tmp_delay%100000;
   if( setitimer(ITIMER_REAL,&time,NULL) == -1){
     printf("timer non set\n");
   }
@@ -239,37 +239,4 @@ void set_alarm( Uint32 tmp_delay){
   
 }
 
-/*
-int main (void){
-  unsigned long debut, fin;
-  
-  printf("debut\n");
-  timer_init();
-  debut = get_time();
-  //
-  timer_set(4000000,"bombe 1");
-  //
-  fin = get_time();
-  printf("temps: %lu \n",fin -debut);
-  debut = get_time();
-  //
-  timer_set(4000010, "bombe 2");
-  //
-  fin = get_time();
-  printf("temps: %lu \n",fin -debut);
-  debut = get_time();
-  //
-  timer_set(2000000, "bombe 3");
-  //
-  fin = get_time();
-  printf("temps: %lu \n",fin -debut);
-  //
-  debut = get_time();
-  if (pthread_join(pid, NULL) != 0){
-    printf("erreur pthread_join \n");
-  }
-  printf("fin\n");
-  return EXIT_SUCCESS;
-}
-*/
 #endif

@@ -15,7 +15,7 @@
 
 
 void set_alarm(Uint32 tmp_delay);
-// Return number of elapsed µsec since... a long time ago
+// Return number of elapsed microsec since... a long time ago
 static unsigned long get_time (void)
 {
   struct timeval tv;
@@ -33,15 +33,15 @@ pthread_t pid;
 
 
 void timer_set (Uint32 delay, void *param);
-/************ Gestion de creation de plusieur timer ************/
+/************ Gestion de plusieur timer ************/
 
 /*
- * La gestion se fait par l'implémentation d'une file de priorité 
+ * La gestion se fait par l'implementation d'une file de priorite
  *
- * fin : moment au quel le sigalrm est censé se déclencher
- * param : parametre à envoyer a sdl_push_event
- * next : pointe sur l'élément suivant
- * same_time : pointe sur un élément devant se terminer en même temps
+ * fin : moment au quel le sigalrm est cense se declencher
+ * param : parametre a envoyer a sdl_push_event
+ * next : pointe sur l'element suivant
+ * same_time : pointe sur un element devant se terminer en même temps
  */ 
 typedef struct file_timer{
   long unsigned fin;
@@ -53,68 +53,67 @@ typedef struct file_timer{
 file_timer *premier_timer;
 
 /*
- * Ajoute un élément à la file 
+ * Ajoute un element a la file 
  *
  * delay : duree avant le sigalrm
- * param : parametre à envoyer a sdl_push_event
+ * param : parametre a envoyer a sdl_push_event
  */
 void enfiler_timer(Uint32 delay, void *param){
-  //Initialisation de l'élement a ajouter
+  //Initialisation de l'element a ajouter
   file_timer *e_toadd = (file_timer *) malloc(sizeof(file_timer));;
   e_toadd->fin = get_time() + delay;
   e_toadd->param = param;
   e_toadd->next = NULL;
   e_toadd->same_time = NULL;
   printf("On enfile %s: ", (char*)param);
+  // cas ou la file est vide
   if(premier_timer == NULL){
     premier_timer = e_toadd;
     printf("je suis le seul et l'unique\n");
   }
   else {
     //cas ou e_toadd se termine avant premier_timer
-    if(e_toadd->fin < premier_timer->fin - 20){
+    if(e_toadd->fin < premier_timer->fin - 500000 ){
       e_toadd->next = premier_timer;
       premier_timer = e_toadd;
       printf("en position 1 devant le premier\n");
       return;
       }
     file_timer *curseur = premier_timer;
-    //cas ou il n'y a qu'un timer dans la file
-    if(curseur->next == NULL){
-	curseur->next = e_toadd;
-	printf("Je me place en position 2 ?\n");
-	return;
-    }
-    while(curseur->next != NULL){
+    
+    while(curseur != NULL){
       //cas ou la fin est proche d'un timer
-      // 20 est un magic number qui nous permet de dire que la fin de ces timer est très court
-      if(curseur->fin - 20 < e_toadd->fin && curseur->fin + 20 > e_toadd->fin){
+      // 5*10^6 est un magic number qui nous permet de dire que la fin de ces timer est très court
+      if(curseur->fin - 500000 < e_toadd->fin && curseur->fin + 500000 > e_toadd->fin){
 	e_toadd->same_time = curseur->same_time;
 	curseur->same_time = e_toadd;
 	printf("same time\n");
 	break;
       }
-      // cas où la fin de to_add est comprise entre la fin du curseur et la fin du suivant
-      if(curseur->fin + 20 < e_toadd->fin && curseur->next->fin - 20 > e_toadd->fin){
-	e_toadd->next = curseur->next;
-	curseur->next = e_toadd;
-	printf(" au milieu\n");
-	break;
+      if(curseur->next !=NULL) {
+	// cas ou la fin de to_add est comprise entre la fin du curseur et la fin du suivant
+	if(curseur->fin + 50 < e_toadd->fin && curseur->next->fin - 50 > e_toadd->fin){
+	  e_toadd->next = curseur->next;
+	  curseur->next = e_toadd;
+	  printf(" au milieu\n");
+	  break;
+	}
       }
-      // cas où la fin de la file a été atteinte
+      // cas ou la fin de la file a ete atteinte
       if(curseur->next == NULL){
 	curseur->next = e_toadd;
-	printf(" à la fin \n");
+	printf(" a la fin \n");
 	break;
       }
+      curseur= curseur->next;
     }
-    printf(" aie \n");
+    printf("aie\n");
   }
 }
 
 /*
  *Fonction appele lors de la reception de sigusr1 
- * le signal sigusr1 est envoyé lorsque le thread a bien recu sigalrm et a ini de traiter ce signal
+ * le signal sigusr1 est envoye lorsque le thread a bien recu sigalrm et a ini de traiter ce signal
  */
 void defiler(int sig){
 
@@ -126,10 +125,9 @@ void defiler(int sig){
     if(premier_timer->same_time == NULL){
       tmp = premier_timer;
       premier_timer = premier_timer->next;
-      // timer_set(premier_timer->fin - tmp->fin, premier_timer->param);
+      
+      set_alarm(premier_timer->fin - tmp->fin );
       free(tmp);
-      // if(premier_timer->fin != 0)
-      set_alarm(premier_timer->fin);
     }
     else
       if(premier_timer->same_time !=NULL){
@@ -153,9 +151,9 @@ void defiler(int sig){
 /***************************************************************/
 
 
-//Déclenche l'événement à la reception du sigalrm
+//Declenche l'evenement a la reception du sigalrm
 void handler_sigalrm(int sig){
-  printf("sdl_push_event (%s) appelée au temps %lu\n", (char*)premier_timer->param, get_time());
+  printf("sdl_push_event (%s) appelee au temps %lu\n", (char*)premier_timer->param, get_time());
   sdl_push_event(premier_timer->param);
   kill(getpid(), SIGUSR1);
 }
@@ -172,29 +170,9 @@ void *demon(void *n){
   sigfillset(&act.sa_mask);
   act.sa_flags=0;
   sigaction(SIGALRM, &act, NULL);
-  
-  sigset_t mask;
-  sigemptyset(&mask);
-  //sigdelset(&mask, SIGALRM);
-   
-  while (1){
-    sigsuspend(&mask);
-  }
-}
-
-// timer_init returns 1 if timers are fully implemented, 0 otherwisent timer_init (void)
-int timer_init(){
-  //crée le thread qui récupére le sigalrm
-  pthread_create(&pid, NULL, demon, NULL);
- 
-  //bloque le sigalrm pour le thread principal
-  sigset_t bloquer_sigalrm;
-  sigemptyset(&bloquer_sigalrm);
-  sigaddset(&bloquer_sigalrm, SIGALRM);
-  pthread_sigmask(SIG_BLOCK,&bloquer_sigalrm,NULL);
 
   /*
-   *Gestion du signal sigusr1, envoyé par le thread pour confirmer la reception du sigalrm
+   *Gestion du signal sigusr1, envoye par le thread pour confirmer la reception du sigalrm
    */
   struct sigaction act_usr1;
   act_usr1.sa_handler = defiler;
@@ -202,40 +180,56 @@ int timer_init(){
   act_usr1.sa_flags = 0;
 
   sigaction(SIGUSR1,&act_usr1, NULL);
+  
+  sigset_t mask;
+  sigemptyset(&mask);
+  
+  while (1){
+    sigsuspend(&mask);
+  }
+}
+
+// timer_init returns 1 if timers are fully implemented, 0 otherwisent timer_init (void)
+int timer_init(){
+  //cree le thread qui recupere le sigalrm
+  pthread_create(&pid, NULL, demon, NULL);
  
-  //return 0; // Implementation not ready
+  //bloque le sigalrm et le sigusr1 pour le thread principal
+  sigset_t bloquer_sig;
+  sigemptyset(&bloquer_sig);
+  sigaddset(&bloquer_sig, SIGALRM);
+  sigaddset(&bloquer_sig, SIGUSR1);
+  pthread_sigmask(SIG_BLOCK,&bloquer_sig,NULL);
+
   return 1; //Implementation ready
 }
 
 void timer_set (Uint32 delay, void *param)
 {
-  Uint32 tmp_delay = get_time() + delay;
+  Uint32 tmp_delay = get_time() + delay ;
   if (delay >=0){
     enfiler_timer(delay, param);
-    if (tmp_delay > premier_timer->fin){
-      // le nouveau timer ne se termine pas avant premier_timer : pas besoin de relancer de timer
-      return;
+    if (tmp_delay <= premier_timer->fin){
+      set_alarm(delay);
     }
   }
-   if(premier_timer == NULL){
-    printf("file vide\n");
-    return;
-    }
-  set_alarm(delay);
 }
 
+// Arme le timer 
+void set_alarm( Uint32 delay){
 
-void set_alarm( Uint32 tmp_delay){
-  
   struct itimerval time;
   time.it_interval.tv_sec=0;
   time.it_interval.tv_usec=0;
-  time.it_value.tv_sec =0;//tmp_delay / 1000000;
-  time.it_value.tv_usec =tmp_delay%100000;
+  time.it_value.tv_sec =1; //delay / 1000000;
+  time.it_value.tv_usec = delay%1000;
   if( setitimer(ITIMER_REAL,&time,NULL) == -1){
     printf("timer non set\n");
   }
-  else printf("timer set à %lu fin prevu pour : %lu\n", get_time(), premier_timer->fin);
+  else{
+    printf("timer set a %lu fin prevu pour : %lu\n", get_time(), premier_timer->fin);
+    printf("%u\n", delay);
+  }
   
 }
 

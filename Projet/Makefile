@@ -17,12 +17,13 @@ CUSTOM_OBJ := obj/mapio.o obj/tempo.o
 LIB	:= lib/libgame.a
 
 #CC=gcc
-CFLAGS := -O3 -g -std=c99 -Wall -Wno-unused-function
+CFLAGS := -O3 -g -std=c99 -Wall -Wno-unused-function 
 CFLAGS += -DPADAWAN
 CFLAGS += -I./include
-CFLAGS += $(shell pkg-config SDL2_image SDL2_mixer --cflags)
-LDFLAGS = -lpthread
+CFLAGS += $(shell pkg-config SDL2_image SDL2_mixer --cflags) 
 LDLIBS := $(shell pkg-config SDL2_image SDL2_mixer --libs)
+
+LDLIBS += -lpthread
 
 $(OBJECTS): $(MAKEFILES)
 

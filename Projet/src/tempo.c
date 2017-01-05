@@ -61,21 +61,23 @@ file_timer *premier_timer;
 void enfiler_timer(Uint32 delay, void *param){
   //Initialisation de l'element a ajouter
   file_timer *e_toadd = (file_timer *) malloc(sizeof(file_timer));;
-  e_toadd->fin = get_time() + delay;
+  e_toadd->fin = get_time() + (delay * 1000); //conversion en millisecondes
   e_toadd->param = param;
   e_toadd->next = NULL;
   e_toadd->same_time = NULL;
-  printf("On enfile %s: ", (char*)param);
+  printf("On enfile " );
   // cas ou la file est vide
   if(premier_timer == NULL){
     premier_timer = e_toadd;
-    printf("je suis le seul et l'unique\n");
+    set_alarm(e_toadd->fin);
+    printf("en premiere, je suis le seul et l'unique\n");
   }
   else {
     //cas ou e_toadd se termine avant premier_timer
-    if(e_toadd->fin < premier_timer->fin - 500000 ){
+    if(e_toadd->fin < premier_timer->fin - 5000 ){
       e_toadd->next = premier_timer;
       premier_timer = e_toadd;
+      set_alarm(e_toadd->fin);
       printf("en position 1 devant le premier\n");
       return;
       }
@@ -83,16 +85,16 @@ void enfiler_timer(Uint32 delay, void *param){
     
     while(curseur != NULL){
       //cas ou la fin est proche d'un timer
-      // 5*10^6 est un magic number qui nous permet de dire que la fin de ces timer est très court
-      if(curseur->fin - 500000 < e_toadd->fin && curseur->fin + 500000 > e_toadd->fin){
+      // 50 est un magic number qui nous permet de dire que la fin de ces timer est très court
+      if(curseur->fin - 5000 < e_toadd->fin && curseur->fin + 5000 > e_toadd->fin){
 	e_toadd->same_time = curseur->same_time;
 	curseur->same_time = e_toadd;
-	printf("same time\n");
+	printf("en meme temps\n");
 	break;
       }
       if(curseur->next !=NULL) {
 	// cas ou la fin de to_add est comprise entre la fin du curseur et la fin du suivant
-	if(curseur->fin + 50 < e_toadd->fin && curseur->next->fin - 50 > e_toadd->fin){
+	if(curseur->fin + 500 < e_toadd->fin && curseur->next->fin - 500 > e_toadd->fin){
 	  e_toadd->next = curseur->next;
 	  curseur->next = e_toadd;
 	  printf(" au milieu\n");
@@ -107,7 +109,6 @@ void enfiler_timer(Uint32 delay, void *param){
       }
       curseur= curseur->next;
     }
-    printf("aie\n");
   }
 }
 
@@ -126,7 +127,7 @@ void defiler(int sig){
       tmp = premier_timer;
       premier_timer = premier_timer->next;
       
-      set_alarm(premier_timer->fin - tmp->fin );
+      set_alarm(premier_timer->fin);
       free(tmp);
     }
     else
@@ -206,29 +207,25 @@ int timer_init(){
 
 void timer_set (Uint32 delay, void *param)
 {
-  Uint32 tmp_delay = get_time() + delay ;
-  if (delay >=0){
     enfiler_timer(delay, param);
-    if (tmp_delay <= premier_timer->fin){
-      set_alarm(delay);
-    }
-  }
 }
 
 // Arme le timer 
 void set_alarm( Uint32 delay){
-
+  
+  Uint32 now = get_time();
+  delay = delay - now;
+  
   struct itimerval time;
   time.it_interval.tv_sec=0;
   time.it_interval.tv_usec=0;
-  time.it_value.tv_sec =1; //delay / 1000000;
-  time.it_value.tv_usec = delay%1000;
+  time.it_value.tv_sec =delay / 1000000;
+  time.it_value.tv_usec = delay % 1000000;
   if( setitimer(ITIMER_REAL,&time,NULL) == -1){
     printf("timer non set\n");
   }
   else{
-    printf("timer set a %lu fin prevu pour : %lu\n", get_time(), premier_timer->fin);
-    printf("%u\n", delay);
+    printf("timer set a %ul fin prevu dans : %u\n", now, delay/1000000);
   }
   
 }

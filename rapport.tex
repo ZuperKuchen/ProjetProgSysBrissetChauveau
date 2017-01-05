@@ -49,12 +49,17 @@ L'utilisation de xargs nous a posé dans un premier temps beaucoup de soucis. En
 \includegraphics[scale=0.5]{erreurArgs.png}
 
 \part{Gestion des temporisateurs}
-Idem
 
 \section{Choix d'implémentation}
-idem
+Pour la temporisation nous utilisons l'appel systéme \textbf{setitimer()} qui envoi un signal sigalrm pour un temps donnés à la fonction par la structure itimer.
+\newline La récuperation des signaux se fait via un thread ``démon'' qui, lorsqu'il recoit un signal sigalrm, appel la fonction \textbf{sdl\_push\_event()} et ensuite émet un signal sigusr1.
+\newline La gestion de plusieurs temporisateur se fait grâce à l'implémentation d'une \textbf{file de priorité} qui nous permet de toujours avoir en tête de la file la liste d'évenement qui se termine en premier. Cette liste contient un ou plusieurs événement qui se termine en même temps ou dans un temps très proche que le premier élément de cette liste .
+\newline La fonction \textbf{defiler} est appelée lors de la reception du signal sigusr1, et permet de supprimer la premiere liste de la file, et dans le cas où il y a au moins deux éléments dans cette liste la fonction libére le premier évenement et émets un signal sigalrm pour que le démon puisse gérer cette événement . 
 
-\section{autre sous section}
-ide
+\section{Des difficultés}
+La première difficulté, était de trouver un moyen pour que le thread principal ne recupére pas le sigalrm, mais le thread démon. Cela à vite été résolu grâce à la fonction \textbf{pthread\_sigmask()} qui permet de bloquer différent signaux pour un thread.
+\newline Ensuite une autre difficulté était de bien faire la file de priorité, mais ce probléme se résolvait petit à petit en voyant les erreurs au fûr et a mesure que nous avancions .
+\newline Et le plus gros probléme était la succession des temporisations, car nous n'arrivions pas à enchainer les temporisateur avec la bonne valeur. Nous avons trouvé la solution grâce à l'aide d'un camarade qui nous a aider mieux comprendre la succession des temporisateur, nous n'avons pas bien converti le temps de fin du temporisateur, que nous avons calculé.
+
 
 \end{document}

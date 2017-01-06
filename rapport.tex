@@ -23,17 +23,13 @@
 
 \maketitle
 
-\begin{abstract}
-  ici on fait l'introduction / résumé du projet
-\end {abstract}
-
 \part{Sauvegarde et chargemement des cartes}
 
-\section{Sauvegarde}
-idem
-
-\section{Chargement}
-Idem
+\section{Sauvegarde \& Chargement}
+Nous avons choisi de sauvegarder les maps de la manière suivante (les retours à la ligne sont là pour la lisibilité, ils ne sont pas présents dans le fichier binaire): \\ \\
+\emph{Largeur Hauteur NbObjets \\
+matrice de la carte ligne par ligne en partant du haut\\
+liste des objets}\\
 
 \section{Utilitaire de manipulation de carte}
 Pour nous assister dans nos tests, nous avons implémenté un executable readMap affichant sur la sortie standard le contenu d'un \emph{file} issu d'une map sauvegardée dans un fichier binaire.
@@ -53,7 +49,7 @@ Afin de manipuler plus facilement des objets, nous avons défini la structure su
   }Object;
 \end{lstlisting}
 
-Pour gérer les nombreuses options disponibles, nous avons utiliser la fonction \textbf{getopt\_long}
+Pour gérer les nombreuses options disponibles, nous avons utilisé la fonction \textbf{getopt\_long}
 \begin{lstlisting}[language=c]
   static struct option long_options[] = {      
     {"getwidth", no_argument, 0,'w'},

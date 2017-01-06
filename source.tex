@@ -1,0 +1,36 @@
+\documentclass[10pt, a4paper]{article}
+
+\usepackage[latin1, utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[francais]{babel}
+\usepackage{moreverb}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage[dvipsnames]{xcolor}
+
+\lstset{numbers=left, language = C, basicstyle=\rm\footnotesize, keywordstyle=\color{blue},commentstyle=\color{Green}, extendedchars=true }
+
+\title{Code Source}
+\inputencoding{utf8}
+\author{ Rémi Brisset, Pierre Chauveau, François Audoy}
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+\newpage
+\section{maputil.c}
+\inputencoding{latin1}
+\lstinputlisting{Projet/util/maputil.c}
+
+\newpage
+\section{readMap.c}
+\inputencoding{latin1}
+\lstinputlisting{Projet/util/readMap.c}
+
+\newpage
+\section{tempo.c}
+\inputencoding{latin1}
+\lstinputlisting{Projet/src/tempo.c}
+
+\end{document}

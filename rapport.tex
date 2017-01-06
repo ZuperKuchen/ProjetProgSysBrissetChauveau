@@ -3,7 +3,7 @@
 \usepackage[frenchb]{babel}
 \usepackage[utf8x]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage{minted}
+\usepackage{listings}
 \usepackage{graphicx}
 \usepackage{pifont}
 %\usepackage[nochapters]{classicthesis} 
@@ -23,30 +23,86 @@
 
 \maketitle
 
-
 \begin{abstract}
   ici on fait l'introduction / résumé du projet
 \end {abstract}
 
 \part{Sauvegarde et chargemement des cartes}
 
-test des accents déjà où ça
-Ecrire ici le contenue de la première partie
 \section{Sauvegarde}
-Idem
+idem
 
 \section{Chargement}
 Idem
 
 \section{Utilitaire de manipulation de carte}
-Pour nous assister dans nos tests, nous avons implémenté un executable readMap affichant sur la sortie standard le contenu d'un \emph{file} issu d'une map sauvegardée.
-Exemple d'utilisation:
-petite image des familles 
+Pour nous assister dans nos tests, nous avons implémenté un executable readMap affichant sur la sortie standard le contenu d'un \emph{file} issu d'une map sauvegardée dans un fichier binaire.
+Exemple d'utilisation: \\
+\includegraphics[scale=0.5]{readMap.png} 
+
+Afin de manipuler plus facilement des objets, nous avons défini la structure suivante:
+\begin{lstlisting}[language=c]
+  typedef struct Object{
+    unsigned frames;
+    int solid;
+    int destructible;
+    int collectible;
+    int generator;
+    int sizeName;
+    char* name;
+  }Object;
+\end{lstlisting}
+
+Pour gérer les nombreuses options disponibles, nous avons utiliser la fonction \textbf{getopt\_long}
+\begin{lstlisting}[language=c]
+  static struct option long_options[] = {      
+    {"getwidth", no_argument, 0,'w'},
+    {"getheight", no_argument, 0, 'h'},
+    {"getobjects", no_argument, 0, 'o'},
+    {"getinfo", no_argument, 0, 'a'},
+    {"setwidth",required_argument,0,'W'},
+    {"setheight", required_argument, 0,'H'},
+    {"setobjects", required_argument, 0, 'O'},
+    {"pruneobjects", no_argument, 0, 'p'}
+  };
+\end{lstlisting}
 
 \subsection{Une erreur surprenante}
-L'utilisation de xargs nous a posé dans un premier temps beaucoup de soucis. En effet, pour une raison qui nous est toujours inconnue, l'odre des premier arguments change lors de l'utilisation de xargs. C'est grâce à l'utilisation de notre fonction de test % \begin{minted}[c] void print\_args(int argc, char** argv);  \end{minted}
-\\
+L'utilisation de xargs pour l'option \textbf{$-$$-$setobjects} nous a posé dans un premier temps beaucoup de soucis. En effet, pour une raison qui nous est toujours inconnue, l'ordre des premier arguments change lors de l'utilisation de xargs. C'est grâce à l'utilisation de notre fonction de test \textbf{void print\_args( int argc, char** argv);} que nous avons pu observer le phénomène.
+
+
+
 \includegraphics[scale=0.5]{erreurArgs.png}
+\\
+L'ordre normal des arguments devrait être \textbf{./maputil ../maps/saved.map $-$$-$setobjects images/ground.png ... }
+
+Pour \og résoudre \fg le problème nous avons décidé de régler ce comportement directement en dur dans le code :
+
+\begin{lstlisting}[language=c]
+  void args_to_objects(Object** Objets, int argc, char** argv){
+    unsigned tmpFra;
+    int tmpSol;
+    int tmpDestruct;
+    int tmpCol;
+    int tmpGen;
+    int tmpSize;
+    char* tmpName;
+    for(int i = 3, j = 0; i < argc-1; i += 6, j++){
+      if (i != 3){
+        tmpName = argv[i];
+      }
+      else tmpName = argv[2];       //Methode manuelle
+      tmpSize = strlen(tmpName)+1;    
+      tmpFra = atoi(argv[i+1]);
+      if (strcmp("destructible", argv[i+3]) == 0){
+        tmpDestruct = 1;
+      }
+\end{lstlisting}
+
+Conséquences: la fonction marche parfaitement seulement si on utilise xargs pour fournir la liste des objets à passer en paramètre.
+
+\section{Conclusion}
+Toutes les options de \textbf{./maputil} ont été correctement implémentées et sont fonctionnelles. En revanche, notre code gagnerait à être un peu plus factorisé. 
 
 \part{Gestion des temporisateurs}
 
